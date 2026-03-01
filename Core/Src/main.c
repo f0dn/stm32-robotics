@@ -99,38 +99,42 @@ int main(void) {
   /* Simple microsecond delay init using DWT */
   dwt_delay_init();
 
-  uart_send_str("Starting init\n");
-  uart_send_str("Holding 1500us pulses\n");
+  uart_send_str("Starting init\r\n");
+  uart_send_str("Holding 1500us pulses\r\n");
   for (int i = 0; i < 100; ++i) {
     send_pulse_us(1500); /* send_pulse_us already yields a 20ms frame (high for
                             1500us, low for rest) */
   }
 
-  uart_send_str("Starting main code\n");
+  uart_send_str("Starting main code\r\n");
   while (1) {
-    uint8_t ch;
-    if (HAL_UART_Receive(&huart2, &ch, 1, 200) == HAL_OK) {
-      if (rx_len < sizeof(rx_buf) - 1)
-        rx_buf[rx_len++] = (char)ch;
+    rx_len = 40;
+    HAL_StatusTypeDef status =
+        HAL_UART_Receive(&huart2, (uint8_t *)rx_buf, rx_len, 200);
 
-      if (ch == '\n' || ch == '\r') {
-        rx_buf[rx_len] = '\0';
+    if (status == HAL_OK) {
+      rx_buf[rx_len] = '\0';
 
-        int values[8];
-        if (parse_csv_positive_ints(rx_buf, values, 8)) {
-          char resp[128];
-          int n = snprintf(resp, sizeof(resp), "OK:%d,%d,%d,%d,%d,%d,%d,%d\n",
-                           values[0], values[1], values[2], values[3],
-                           values[4], values[5], values[6], values[7]);
-          if (n > 0)
-            uart_send_str(resp);
-        } else {
-          uart_send_str("ERR: expected 8 positive integers comma-separated\n");
-        }
-        send_pulse_us(values[0]);
-
-        rx_len = 0;
+      int values[8];
+      if (parse_csv_positive_ints(rx_buf, values, 8)) {
+        char resp[128];
+        int n = snprintf(resp, sizeof(resp), "OK:%d,%d,%d,%d,%d,%d,%d,%d\r\n",
+                         values[0], values[1], values[2], values[3], values[4],
+                         values[5], values[6], values[7]);
+        if (n > 0)
+          uart_send_str(resp);
+      } else {
+        uart_send_str("ERR: expected 8 positive integers comma-separated\r\n");
       }
+
+      uart_send_str("First value: ");
+      char val_str[16];
+      uart_send_str(itoa(values[0], val_str, 10));
+      uart_send_str("\r\n");
+
+      send_pulse_us(values[0]);
+
+      rx_len = 0;
     }
   }
 }
@@ -184,7 +188,7 @@ void SystemClock_Config(void) {
  */
 static void MX_USART2_UART_Init(void) {
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 38400;
+  huart2.Init.BaudRate = 115200;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;
@@ -239,6 +243,7 @@ void Error_Handler(void) {
   /* User can add his own implementation to report the HAL error return state */
   __disable_irq();
   while (1) {
+    uart_send_str("BIG BAD ERROR\r\n");
   }
   /* USER CODE END Error_Handler_Debug */
 }
