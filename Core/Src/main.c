@@ -7,6 +7,10 @@
 
 UART_HandleTypeDef huart2;
 
+const uint16_t MOTOR_PINS[] = {GPIO_PIN_8,  GPIO_PIN_9,  GPIO_PIN_10,
+                               GPIO_PIN_11, GPIO_PIN_12, GPIO_PIN_13,
+                               GPIO_PIN_14, GPIO_PIN_15};
+
 static char rx_buf[256];
 static uint16_t rx_len = 0;
 
@@ -47,7 +51,7 @@ static int parse_csv_positive_ints(const char *s, int *out, int max_count) {
 }
 
 void SystemClock_Config(void);
-static void MX_GPIO_Init(void);
+static void init_all_motors_gpio(void);
 static void MX_USART2_UART_Init(void);
 static void dwt_delay_init(void);
 static void delay_us(uint32_t us);
@@ -94,20 +98,17 @@ int main(void) {
     SystemClock_Config();
 
     /* Initialize all configured peripherals */
-    MX_GPIO_Init();
+    init_all_motors_gpio();
     MX_USART2_UART_Init();
 
     /* Simple microsecond delay init using DWT */
     dwt_delay_init();
 
-    const uint16_t PINS[] = {GPIO_PIN_8, GPIO_PIN_9, GPIO_PIN_10, GPIO_PIN_11,
-                             GPIO_PIN_12, GPIO_PIN_13, GPIO_PIN_14, GPIO_PIN_15};
-
     uart_send_str("Starting init\r\n");
     uart_send_str("Holding 1500us pulses\r\n");
     for (int i = 0; i < 100; ++i) {
         for (int j = 0; j < 8; ++j) {
-            send_pulse_us(1500, PINS[j]);
+            send_pulse_us(1500, MOTOR_PINS[j]);
         }
     }
 
@@ -140,7 +141,7 @@ int main(void) {
             uart_send_str("\r\n");
 
             for (int j = 0; j < 8; ++j) {
-                send_pulse_us((uint16_t)values[j], PINS[j]);
+                send_pulse_us((uint16_t)values[j], MOTOR_PINS[j]);
             }
 
             rx_len = 0;
@@ -211,36 +212,28 @@ static void MX_USART2_UART_Init(void) {
     }
 }
 
-/**
- * @brief GPIO Initialization Function
- * @param None
- * @retval None
- */
-static void MX_GPIO_Init(void) {
-    GPIO_InitTypeDef GPIO_InitStruct = {0};
-
-    /* GPIO Ports Clock Enable */
+static void init_all_motors_gpio(void) {
     __HAL_RCC_GPIOC_CLK_ENABLE();
     __HAL_RCC_GPIOF_CLK_ENABLE();
     __HAL_RCC_GPIOA_CLK_ENABLE();
     __HAL_RCC_GPIOB_CLK_ENABLE();
 
-    /*Configure MOTOR signal pin Output Level */
-    HAL_GPIO_WritePin(MOTOR_GPIO_Port, MOTOR_Pin, GPIO_PIN_RESET);
+    const size_t NUM_MOTORS = sizeof(MOTOR_PINS) / sizeof(MOTOR_PINS[0]);
+    for (size_t motorIndex = 0; motorIndex < NUM_MOTORS; ++motorIndex) {
+        const uint16_t motorPin = MOTOR_PINS[motorIndex];
 
-    /*Configure GPIO pin : B1_Pin */
-    GPIO_InitStruct.Pin = B1_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
-    /* Enable internal pull-up so button can be wired to GND when pressed */
-    GPIO_InitStruct.Pull = GPIO_PULLUP;
-    HAL_GPIO_Init(B1_GPIO_Port, &GPIO_InitStruct);
+        // configure pin as motor output
+        GPIO_InitTypeDef gpioOptions = {
+            .Pin = motorPin,
+            .Mode = GPIO_MODE_OUTPUT_PP,
+            .Pull = GPIO_NOPULL,
+            .Speed = GPIO_SPEED_FREQ_LOW,
+        };
+        HAL_GPIO_Init(MOTOR_GPIO_Port, &gpioOptions);
 
-    /*Configure GPIO pin : MOTOR_Pin (servo/motor signal) */
-    GPIO_InitStruct.Pin = MOTOR_Pin;
-    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-    GPIO_InitStruct.Pull = GPIO_NOPULL;
-    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
-    HAL_GPIO_Init(MOTOR_GPIO_Port, &GPIO_InitStruct);
+        /* ensure output starts low */
+        HAL_GPIO_WritePin(MOTOR_GPIO_Port, motorPin, GPIO_PIN_RESET);
+    }
 }
 
 /**
