@@ -7,6 +7,11 @@
 
 UART_HandleTypeDef huart2;
 
+#define BNO055_ADDR         (0x28 << 1) // 7-bit address shifted for HAL
+#define BNO055_ACC_DATA_X_LSB 0x08
+
+extern I2C_HandleTypeDef hi2c1;
+
 const uint16_t MOTOR_PINS[] = {GPIO_PIN_8,  GPIO_PIN_9,  GPIO_PIN_10,
                                GPIO_PIN_11, GPIO_PIN_12, GPIO_PIN_13,
                                GPIO_PIN_14, GPIO_PIN_15};
@@ -16,6 +21,17 @@ static uint16_t rx_len = 0;
 
 static void uart_send_str(const char *s) {
     HAL_UART_Transmit(&huart2, (uint8_t *)s, strlen(s), 200);
+}
+
+// Read 6 bytes from a vector register (e.g., accelerometer)
+int bno055_read_vector(uint8_t reg, int16_t *x, int16_t *y, int16_t *z) {
+    uint8_t buf[6];
+    if (HAL_I2C_Mem_Read(&hi2c1, BNO055_ADDR, reg, I2C_MEMADD_SIZE_8BIT, buf, 6, 100) != HAL_OK)
+        return 0;
+    *x = (int16_t)(buf[0] | (buf[1] << 8));
+    *y = (int16_t)(buf[2] | (buf[3] << 8));
+    *z = (int16_t)(buf[4] | (buf[5] << 8));
+    return 1;
 }
 
 /* Parse up to max_count positive integers from a comma-separated string.
@@ -114,6 +130,9 @@ int main(void) {
 
     uart_send_str("Starting main code\r\n");
     while (1) {
+        // for reading imu data
+        // int16_t ax, ay, az;
+        // bno055_read_vector(BNO055_ACC_DATA_X_LSB, &ax, &ay, &az);
         rx_len = 40;
         HAL_StatusTypeDef status =
             HAL_UART_Receive(&huart2, (uint8_t *)rx_buf, rx_len, 200);

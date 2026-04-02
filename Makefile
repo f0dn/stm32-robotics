@@ -9,3 +9,5 @@ run: build
 	@st-flash write build/Debug/stm.bin 0x08000000
 	@st-flash reset
 
+cat:
+	@picocom -b 38400
