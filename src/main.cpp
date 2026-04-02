@@ -36,7 +36,7 @@ public:
 
 void setup()
 {
-    Serial.begin(115200);
+    Serial.begin(38400);
     pinMode(LED_BUILTIN, OUTPUT);
 }
 
