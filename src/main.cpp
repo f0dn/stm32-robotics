@@ -6,20 +6,13 @@
 #define NUM_MOTORS 8
 #define NUM_SERVOS 5
 #define NUM_STEPPERS 3
+#define TASK_DELAY 100
 
 const uint16_t MOTOR_PINS[NUM_MOTORS] = {GPIO_PIN_8,  GPIO_PIN_9,  GPIO_PIN_10,
                                          GPIO_PIN_11, GPIO_PIN_12, GPIO_PIN_13,
                                          GPIO_PIN_14, GPIO_PIN_15};
 
 Adafruit_BNO055 bno = Adafruit_BNO055();
-SemaphoreHandle_t serialMutex;
-SemaphoreHandle_t rxMutex;
-SemaphoreHandle_t txMutex;
-
-void sendMotors(void *params);
-void readIMU(void *params);
-void sendSerial(void *params);
-void readSerial(void *params);
 
 /*
   The data received by the microcontroller from UART.
@@ -50,6 +43,27 @@ class Rx {
     }
 };
 
+/*
+  The data to be sent to the jetson from the microcontroller via UART.
+
+  Currently just IMU orientation data
+*/
+class Tx {
+  public:
+    sensors_event_t orientation;
+
+    Tx() { bno.getEvent(&orientation); }
+};
+
+SemaphoreHandle_t serialMutex;
+QueueHandle_t rxQueue;
+QueueHandle_t txQueue;
+
+void sendMotors(void *params);
+void readIMU(void *params);
+void sendSerial(void *params);
+void readSerial(void *params);
+
 void initSemaphore(SemaphoreHandle_t &sem) {
     if (sem == NULL) {
         sem = xSemaphoreCreateMutex();
@@ -60,6 +74,18 @@ void initSemaphore(SemaphoreHandle_t &sem) {
             }
         }
         xSemaphoreGive(sem);
+    }
+}
+
+void initQueue(QueueHandle_t &queue, int length, int itemSize) {
+    if (queue == NULL) {
+        queue = xQueueCreate(length, itemSize);
+        if (queue == NULL) {
+            Serial.println("Failed to create queue!");
+            while (1) {
+                delay(10);
+            }
+        }
     }
 }
 
@@ -77,8 +103,8 @@ void setup() {
     }
 
     initSemaphore(serialMutex);
-    initSemaphore(rxMutex);
-    initSemaphore(txMutex);
+    initQueue(rxQueue, 8, sizeof(Rx));
+    initQueue(txQueue, 8, sizeof(Tx));
 
     for (int motorNum = 0; motorNum < NUM_MOTORS; motorNum++) {
         analogWrite(MOTOR_PINS[motorNum], 1500);
@@ -97,28 +123,52 @@ void setup() {
 
 void loop() {}
 
-void sendMotors(void *params) {}
+void sendMotors(void *params) {
+    Rx rx;
+    while (1) {
+        if (xQueueReceive(rxQueue, &rx, portMAX_DELAY) == pdPASS) {
+            for (int motorNum = 0; motorNum < NUM_MOTORS; motorNum++) {
+                analogWrite(
+                    MOTOR_PINS[motorNum],
+                    rx.motorValues[motorNum]); // this hasnt been tested might
+                                               // need to send 20000ms blocks
+                                               // instead. see old code
+            }
 
-void readIMU(void *params) {}
+            // TODO - add code to control servos and stepper motors
+        }
+    }
+}
 
-void sendSerial(void *params) {}
+void readIMU(void *params) {
+    Tx tx;
+    while (1) {
+        tx = Tx();
+        xQueueSend(txQueue, &tx, portMAX_DELAY);
+        vTaskDelay(pdMS_TO_TICKS(TASK_DELAY));
+    }
+}
+
+void sendSerial(void *params) {
+    Tx tx;
+    while (1) {
+        if (xQueueReceive(txQueue, &tx, portMAX_DELAY) == pdPASS) {
+            xSemaphoreTake(serialMutex, portMAX_DELAY);
+            Serial.write((uint8_t *)&tx.orientation, sizeof(tx.orientation));
+            xSemaphoreGive(serialMutex);
+        }
+    }
+}
 
 void readSerial(void *params) {
-    if (Serial.available() > 0) {
-        Rx rx = Rx();
-
-        for (int motorNum = 0; motorNum < NUM_MOTORS; motorNum++) {
-            analogWrite(
-                MOTOR_PINS[motorNum],
-                rx.motorValues[motorNum]); // this hasnt been tested might need
-                                           // to send 20000ms blocks instead.
-                                           // see old code
+    Rx rx;
+    while (1) {
+        xSemaphoreTake(serialMutex, portMAX_DELAY);
+        if (Serial.available() > 0) {
+            rx = Rx();
+            xQueueSend(rxQueue, &rx, portMAX_DELAY);
+            vTaskDelay(pdMS_TO_TICKS(TASK_DELAY));
         }
-
-        Serial.printf("DEBUG, received motor values: %ld, %ld, %ld, %ld, %ld, "
-                      "%ld, %ld, %ld\n",
-                      rx.motorValues[0], rx.motorValues[1], rx.motorValues[2],
-                      rx.motorValues[3], rx.motorValues[4], rx.motorValues[5],
-                      rx.motorValues[6], rx.motorValues[7]);
+        xSemaphoreGive(serialMutex);
     }
 }
