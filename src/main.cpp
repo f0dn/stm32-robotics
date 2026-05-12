@@ -1,7 +1,6 @@
-#include "WSerial.h"
-#include "wiring_time.h"
 #include <Adafruit_BNO055.h>
 #include <Arduino.h>
+#include <STM32FreeRTOS.h>
 #include <Wire.h>
 
 #define NUM_MOTORS 8
@@ -13,6 +12,14 @@ const uint16_t MOTOR_PINS[NUM_MOTORS] = {GPIO_PIN_8,  GPIO_PIN_9,  GPIO_PIN_10,
                                          GPIO_PIN_14, GPIO_PIN_15};
 
 Adafruit_BNO055 bno = Adafruit_BNO055();
+SemaphoreHandle_t serialMutex;
+SemaphoreHandle_t rxMutex;
+SemaphoreHandle_t txMutex;
+
+void sendMotors(void *params);
+void readIMU(void *params);
+void sendSerial(void *params);
+void readSerial(void *params);
 
 /*
   The data received by the microcontroller from UART.
@@ -43,29 +50,60 @@ class Rx {
     }
 };
 
+void initSemaphore(SemaphoreHandle_t &sem) {
+    if (sem == NULL) {
+        sem = xSemaphoreCreateMutex();
+        if (sem == NULL) {
+            Serial.println("Failed to create semaphore!");
+            while (1) {
+                delay(10);
+            }
+        }
+        xSemaphoreGive(sem);
+    }
+}
+
 void setup() {
     Serial.begin(38400);
     while (!Serial) {
         delay(10);
     }
-    Wire.begin();
-    delay(2000);
 
     if (!bno.begin()) {
-        Serial.println("Failed to initialize BNO! Check your connections.");
+        Serial.println("Failed to initialize BNO!");
         while (1) {
             delay(10);
         }
     }
 
-    Serial.println("BNO initialized successfully!");
+    initSemaphore(serialMutex);
+    initSemaphore(rxMutex);
+    initSemaphore(txMutex);
 
     for (int motorNum = 0; motorNum < NUM_MOTORS; motorNum++) {
         analogWrite(MOTOR_PINS[motorNum], 1500);
     }
+
+    xTaskCreate(sendMotors, "Send Motors", 256, NULL, 1, NULL);
+    xTaskCreate(readIMU, "Read IMU", 256, NULL, 1, NULL);
+    xTaskCreate(sendSerial, "Send Serial", 256, NULL, 1, NULL);
+    xTaskCreate(readSerial, "Read Serial", 256, NULL, 1, NULL);
+
+    vTaskStartScheduler();
+    Serial.println("Insufficient RAM");
+    while (1) {
+    }
 }
 
-void loop() {
+void loop() {}
+
+void sendMotors(void *params) {}
+
+void readIMU(void *params) {}
+
+void sendSerial(void *params) {}
+
+void readSerial(void *params) {
     if (Serial.available() > 0) {
         Rx rx = Rx();
 

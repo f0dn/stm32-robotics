@@ -5,6 +5,7 @@
 
 -I/Users/there/Documents/STM/stm/include
 -I/Users/there/Documents/STM/stm/src
+-I/Users/there/Documents/STM/stm/.pio/libdeps/nucleo_f303re/STM32duino FreeRTOS/src
 -I/Users/there/Documents/STM/stm/.pio/libdeps/nucleo_f303re/Adafruit BNO055
 -I/Users/there/Documents/STM/stm/.pio/libdeps/nucleo_f303re/Adafruit BNO055/utility
 -I/Users/there/Documents/STM/stm/.pio/libdeps/nucleo_f303re/Adafruit Unified Sensor
