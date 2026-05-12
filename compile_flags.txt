@@ -7,7 +7,6 @@
 -I/Users/there/Documents/STM/stm/src
 -I/Users/there/Documents/STM/stm/.pio/libdeps/nucleo_f303re/Adafruit BNO055
 -I/Users/there/Documents/STM/stm/.pio/libdeps/nucleo_f303re/Adafruit BNO055/utility
--I/Users/there/Documents/STM/stm/.pio/libdeps/nucleo_f303re/Adafruit BNO08x/src
 -I/Users/there/Documents/STM/stm/.pio/libdeps/nucleo_f303re/Adafruit Unified Sensor
 -I/Users/there/Documents/STM/stm/.pio/libdeps/nucleo_f303re/Adafruit BusIO
 -I/Users/there/.platformio/packages/framework-arduinoststm32/libraries/SPI/src
