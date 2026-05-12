@@ -1,21 +1,13 @@
-# Uncomment lines below if you have problems with $PATH
-#SHELL := /bin/bash
-#PATH := /usr/local/bin:$(PATH)
+run: compile_flags.txt
+	@pio -f run --target upload --target monitor
 
-all:
-	pio -f -c vim run
-
-upload:
-	pio -f -c vim run --target upload
+upload: compile_flags.txt
+	@pio -f run --target upload
 
 clean:
-	pio -f -c vim run --target clean
+	@pio -f run --target clean
 
-program:
-	pio -f -c vim run --target program
-
-uploadfs:
-	pio -f -c vim run --target uploadfs
-
-update:
-	pio -f -c vim update
+compile_flags.txt: platformio.ini
+	@pio project init --ide vim
+	@echo "-fgnuc-version=6.4" >> .ccls
+	@mv .ccls compile_flags.txt

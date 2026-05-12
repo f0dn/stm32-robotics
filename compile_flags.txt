@@ -3,10 +3,15 @@
 %c -std=gnu17 -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -Os -ffunction-sections -fdata-sections -nostdlib --param max-inline-insns-single=500
 %cpp -std=gnu++17 -fno-threadsafe-statics -fno-rtti -fno-exceptions -fno-use-cxa-atexit -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -Os -ffunction-sections -fdata-sections -nostdlib --param max-inline-insns-single=500
 
--fgnuc-version=6.4
-
 -I/Users/there/Documents/STM/stm/include
 -I/Users/there/Documents/STM/stm/src
+-I/Users/there/Documents/STM/stm/.pio/libdeps/nucleo_f303re/Adafruit BNO055
+-I/Users/there/Documents/STM/stm/.pio/libdeps/nucleo_f303re/Adafruit BNO055/utility
+-I/Users/there/Documents/STM/stm/.pio/libdeps/nucleo_f303re/Adafruit BNO08x/src
+-I/Users/there/Documents/STM/stm/.pio/libdeps/nucleo_f303re/Adafruit Unified Sensor
+-I/Users/there/Documents/STM/stm/.pio/libdeps/nucleo_f303re/Adafruit BusIO
+-I/Users/there/.platformio/packages/framework-arduinoststm32/libraries/SPI/src
+-I/Users/there/.platformio/packages/framework-arduinoststm32/libraries/Wire/src
 -I/Users/there/.platformio/packages/framework-arduinoststm32/cores/arduino/avr
 -I/Users/there/.platformio/packages/framework-arduinoststm32/cores/arduino/stm32
 -I/Users/there/.platformio/packages/framework-arduinoststm32/libraries/SrcWrapper/inc
@@ -35,14 +40,12 @@
 -I/Users/there/.platformio/packages/framework-arduinoststm32/libraries/Keyboard/src
 -I/Users/there/.platformio/packages/framework-arduinoststm32/libraries/Mouse/src
 -I/Users/there/.platformio/packages/framework-arduinoststm32/libraries/RGB_LED_TLC59731/src
--I/Users/there/.platformio/packages/framework-arduinoststm32/libraries/SPI/src
 -I/Users/there/.platformio/packages/framework-arduinoststm32/libraries/Servo/src
 -I/Users/there/.platformio/packages/framework-arduinoststm32/libraries/SoftwareSerial/src
 -I/Users/there/.platformio/packages/framework-arduinoststm32/libraries/SrcWrapper/src
 -I/Users/there/.platformio/packages/framework-arduinoststm32/libraries/SubGhz/src
 -I/Users/there/.platformio/packages/framework-arduinoststm32/libraries/USBDevice/src
 -I/Users/there/.platformio/packages/framework-arduinoststm32/libraries/VirtIO/src
--I/Users/there/.platformio/packages/framework-arduinoststm32/libraries/Wire/src
 -I/Users/there/.platformio/packages/toolchain-gccarmnoneeabi/arm-none-eabi/include/c++/12.3.1
 -I/Users/there/.platformio/packages/toolchain-gccarmnoneeabi/arm-none-eabi/include/c++/12.3.1/arm-none-eabi
 -I/Users/there/.platformio/packages/toolchain-gccarmnoneeabi/lib/gcc/arm-none-eabi/12.3.1/include
@@ -63,3 +66,4 @@
 -DUSE_FULL_LL_DRIVER
 -DVARIANT_H="variant_NUCLEO_F303RE.h"
 -DVECT_TAB_OFFSET=0x0
+-fgnuc-version=6.4
